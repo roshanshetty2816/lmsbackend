@@ -27,6 +27,8 @@ const LibrarySchema = mongoose.Schema(
     },
     rating: {
       type: Number,
+      min: 0,
+      max: 5,
       required: true,
     },
     // denotes the user who requested the book
@@ -43,6 +45,11 @@ const LibrarySchema = mongoose.Schema(
       type: mongoose.Schema.Types.Number,
       required: true,
       min: 0,
+    },
+    numOfRatings: {
+      type: mongoose.Schema.Types.Number,
+      min: 0,
+      required: true,
     },
   },
   {

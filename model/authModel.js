@@ -18,6 +18,7 @@ const authSchema = mongoose.Schema(
     admin: {
       type: Boolean,
       required: true,
+      default: false,
     },
     subscriber: {
       type: Boolean,
@@ -39,6 +40,10 @@ const authSchema = mongoose.Schema(
     blocked: {
       type: Boolean,
       default: false,
+    },
+    readBooks: {
+      type: [String],
+      default: [],
     },
   },
   {

@@ -2,7 +2,12 @@ const asyncHandler = require("express-async-handler");
 const Book = require("../model/libraryModel");
 const Auth = require("../model/authModel");
 const Activity = require("../model/activityModel");
+const Comment = require("../model/CommentModel");
 const nodemailer = require("nodemailer");
+const {
+  newsLetterSchema,
+  addBookSchema,
+} = require("../validation/adminValidation");
 
 //gets all books from the database isrrespective of the user
 const getAllBooks = asyncHandler(async (req, res) => {
@@ -14,24 +19,63 @@ const getAllBooks = asyncHandler(async (req, res) => {
     throw new Error("Not Authorized");
   }
   // get all books from the database
-  const search = req.query.search === undefined ? "" : req.query.search;
-  const sort = req.query.sort === "asc" ? 1 : -1;
   const page = req.query.page === undefined ? 1 : req.query.page;
-  const limit = 5
-  const skip = page*limit-limit
-  const books = await Book.find({ title: { $regex: search, $options: "i" } }).skip(skip).limit(limit).sort({title:sort}).select("-__v -createdAt -updatedAt");
-  const total=await Book.find({ title: { $regex: search, $options: "i" } }).sort({title:sort})
-  res.json({books,total});
+  const limit = 5;
+  const skip = page * limit - limit;
+  const search = req.query.search === undefined ? "" : req.query.search;
+  let matchQuery = { $match: { title: { $regex: search, $options: "i" } } };
+  const sort = req.query.sort === "asc" ? 1 : -1;
+  let sortBy = { title: sort };
+  const query = [
+    matchQuery,
+    {
+      $sort: sortBy,
+    },
+    {
+      $facet: {
+        result: [
+          {
+            $skip: skip,
+          },
+          {
+            $limit: limit,
+          },
+          {
+            $project: {
+              createdAt: 0,
+              updatedAt: 0,
+              __v: 0,
+            },
+          },
+        ],
+        count: [
+          {
+            $count: "count",
+          },
+        ],
+      },
+    },
+    {
+      $project: {
+        result: 1,
+        count: {
+          $arrayElemAt: ["$count", 0],
+        },
+      },
+    },
+  ];
+  const result = await Book.aggregate(query);
+  res.status(200).json(result[0]);
 });
 
 // adds a book to the database
 const addBook = asyncHandler(async (req, res) => {
-  // getting author and title of the book by destructuring req
-  const { author, title, genre, total,rating } = req.body;
-  // check if both are not null
-  if (!title || !author || !genre || !total||!rating) {
+  let result;
+  try {
+    result = await addBookSchema.validateAsync(req.body);
+  } catch (error) {
     res.status(400);
-    throw new Error("Enter all details of the Book");
+    throw new Error(error);
   }
   const exist = await Auth.findById(req.user.id);
   // to check if user exists by that id in the databse
@@ -42,14 +86,14 @@ const addBook = asyncHandler(async (req, res) => {
   }
   // create and add a book to the database
   const book = await Book.create({
-    title,
-    author,
-    genre: genre,
-    stock: total,
-    rating:rating,
+    title: result.title,
+    author: result.author,
+    genre: result.genre,
+    stock: result.total,
+    rating: result.rating,
+    numOfRatings: result.numOfRatings,
   });
-  res.status(200);
-  res.json(book);
+  res.status(200).json(book);
 });
 
 // issue a book to a particular user by id
@@ -69,7 +113,7 @@ const issueBook = asyncHandler(async (req, res) => {
     const user = await Auth.findById(req.body.userId);
     // to check if user exist in database passed in the body of req
     if (!user) {
-      res.json(400);
+      res.status(400);
       throw new Error("User does not Exist");
     }
     // check if user is blocked
@@ -103,7 +147,7 @@ const issueBook = asyncHandler(async (req, res) => {
     }
   } catch (error) {
     res.status(500);
-    throw new Error("Enter valid Book ID");
+    throw new Error(error);
   }
   try {
     const date = new Date();
@@ -120,7 +164,10 @@ const issueBook = asyncHandler(async (req, res) => {
     );
     await Auth.findByIdAndUpdate(
       { _id: req.body.userId },
-      { $push: { issued: req.params.id } },
+      {
+        $push: { issued: req.params.id },
+        $addToSet: { readBooks: req.params.id },
+      },
       { new: true }
     );
     await Activity.create({
@@ -128,8 +175,7 @@ const issueBook = asyncHandler(async (req, res) => {
       action: "issue",
       book: req.params.id,
     });
-    res.status(200);
-    res.json(updatedbook);
+    res.status(200).json(updatedbook);
   } catch (error) {
     res.status(500);
     throw new Error("Try Again");
@@ -189,14 +235,14 @@ const returnBook = asyncHandler(async (req, res) => {
       action: "return",
       book: req.params.id,
     });
-    res.status(200);
-    res.json(updatedbook);
+    res.status(200).json(updatedbook);
   } catch (error) {
     res.status(400);
     throw new Error("Internal Server Error");
   }
 });
 
+// to delete a book from library
 const deleteBook = asyncHandler(async (req, res) => {
   const admin = await Auth.findById(req.user.id);
   // to check if user exists by that id in the databse
@@ -218,10 +264,11 @@ const deleteBook = asyncHandler(async (req, res) => {
   }
   // delete book from the inventory
   await book.remove();
-  res.status(200);
-  res.json({ id: req.params.id });
+  await Comment.deleteMany({ bookID: book._id });
+  res.status(200).json({ id: req.params.id });
 });
 
+// to delete User from the library
 const deleteUser = asyncHandler(async (req, res) => {
   const admin = await Auth.findById(req.user.id);
   // to check if user exists by that id in the databse
@@ -239,15 +286,14 @@ const deleteUser = asyncHandler(async (req, res) => {
   // check if user has returned all issued books
   if (user.issued.length === 0) {
     await user.remove();
-    res.status(200);
-    res.json({ id: user._id });
+    res.status(200).json({ id: user._id });
   } else {
     res.status(400);
     throw new Error("User has Issued books and not returned it");
   }
 });
 
-// check for books that has been requested by any users
+// check for books that has been requested by all users
 const requestedBooks = asyncHandler(async (req, res) => {
   const admin = await Auth.findById(req.user.id);
   // to check if user exists by that id in the databse
@@ -257,11 +303,53 @@ const requestedBooks = asyncHandler(async (req, res) => {
     throw new Error("Not Authorized");
   }
   // check for books that has been requested
-  const books = await Book.find({ requestedUsers: { $exists: true, $ne: [] } });
-  res.status(200);
-  res.json(books);
+  const page = req.query.page === undefined ? 1 : req.query.page;
+  const limit = 5;
+  const skip = page * limit - limit;
+  const query = [
+    {
+      $match: {
+        requestedUsers: { $exists: true, $ne: [] },
+      },
+    },
+    {
+      $facet: {
+        result: [
+          {
+            $skip: skip,
+          },
+          {
+            $limit: limit,
+          },
+          {
+            $project: {
+              createdAt: 0,
+              updatedAt: 0,
+              __v: 0,
+            },
+          },
+        ],
+        count: [
+          {
+            $count: "count",
+          },
+        ],
+      },
+    },
+    {
+      $project: {
+        result: 1,
+        count: {
+          $arrayElemAt: ["$count", 0],
+        },
+      },
+    },
+  ];
+  const result = await Book.aggregate(query);
+  res.status(200).json(result[0]);
 });
 
+// cancel a book request made by user
 const cancelRequest = asyncHandler(async (req, res) => {
   const admin = await Auth.findById(req.user.id);
   // to check if user exists by that id in the databse
@@ -291,10 +379,10 @@ const cancelRequest = asyncHandler(async (req, res) => {
     { $pull: { requestedUsers: user.id } },
     { new: true }
   );
-  res.status(200);
-  res.json(cancelledRequest);
+  res.status(200).json({ id: user.id });
 });
 
+// get all issued books to users
 const issuedBooks = asyncHandler(async (req, res) => {
   const admin = await Auth.findById(req.user.id);
   // to check if user exists by that id in the databse
@@ -325,6 +413,7 @@ const issuedBooks = asyncHandler(async (req, res) => {
   }
 });
 
+// to unissue a book that has been issued to any user
 const unIssued = asyncHandler(async (req, res) => {
   const admin = await Auth.findById(req.user.id);
   // to check if user exists by that id in the databse
@@ -355,6 +444,7 @@ const unIssued = asyncHandler(async (req, res) => {
   }
 });
 
+// to get list of all users
 const allUsers = asyncHandler(async (req, res) => {
   const admin = await Auth.findById(req.user.id);
   // to check if user exists by that id in the databse
@@ -363,14 +453,57 @@ const allUsers = asyncHandler(async (req, res) => {
     res.status(401);
     throw new Error("Not Authorized");
   }
-  // check for books that are not available
-  const users = await Auth.find({ admin: false }).select(
-    "email name issued blocked"
-  );
-  res.status(200);
-  res.json(users);
+  const page = req.query.page === undefined ? 1 : req.query.page;
+  const limit = 5;
+  const skip = page * limit - limit;
+  const query = [
+    {
+      $match: {
+        admin: false,
+      },
+    },
+    {
+      $facet: {
+        result: [
+          {
+            $skip: skip,
+          },
+          {
+            $limit: limit,
+          },
+          {
+            $project: {
+              password: 0,
+              subscriber: 0,
+              admin: 0,
+              wishlist: 0,
+              createdAt: 0,
+              updatedAt: 0,
+              __v: 0,
+            },
+          },
+        ],
+        count: [
+          {
+            $count: "count",
+          },
+        ],
+      },
+    },
+    {
+      $project: {
+        result: 1,
+        count: {
+          $arrayElemAt: ["$count", 0],
+        },
+      },
+    },
+  ];
+  const result = await Auth.aggregate(query);
+  res.status(200).json(result[0]);
 });
 
+// to get list of all subscribers of the library
 const subscribers = asyncHandler(async (req, res) => {
   const admin = await Auth.findById(req.user.id);
   // to check if user exists by that id in the databse
@@ -380,15 +513,62 @@ const subscribers = asyncHandler(async (req, res) => {
     throw new Error("Not Authorized");
   }
   try {
-    const subscribers = await Auth.find({ subscriber: true });
-    res.status(200);
-    res.json(subscribers);
+    const page = req.query.page === undefined ? 1 : req.query.page;
+    const limit = 10;
+    const skip = page * limit - limit;
+    const query = [
+      {
+        $match: {
+          subscriber: true,
+        },
+      },
+      {
+        $facet: {
+          result: [
+            {
+              $skip: skip,
+            },
+            {
+              $limit: limit,
+            },
+            {
+              $project: {
+                admin: 0,
+                subscriber: 0,
+                readBooks: 0,
+                wishlist: 0,
+                password: 0,
+                createdAt: 0,
+                updatedAt: 0,
+                __v: 0,
+              },
+            },
+          ],
+          count: [
+            {
+              $count: "count",
+            },
+          ],
+        },
+      },
+      {
+        $project: {
+          result: 1,
+          count: {
+            $arrayElemAt: ["$count", 0],
+          },
+        },
+      },
+    ];
+    const result = await Auth.aggregate(query);
+    res.status(200).json(result[0]);
   } catch (error) {
     res.status(400);
     res.json(error);
   }
 });
 
+// to publish news to all/subsribers
 const newsLetter = asyncHandler(async (req, res) => {
   const admin = await Auth.findById(req.user.id);
   // to check if user exists by that id in the databse
@@ -397,9 +577,15 @@ const newsLetter = asyncHandler(async (req, res) => {
     res.status(401);
     throw new Error("Not Authorized");
   }
-  const { subject, body, audience } = req.body;
+  let result;
+  try {
+    result = await newsLetterSchema.validateAsync(req.body);
+  } catch (error) {
+    res.status(400);
+    throw new Error(error);
+  }
   const receivers =
-    audience === "all" ? { admin: false } : { subscriber: true };
+    result.audience === "all" ? { admin: false } : { subscriber: true };
   const users = await Auth.find(receivers).select("email -_id");
   let emails = "";
   for (var d of users) {
@@ -421,25 +607,23 @@ const newsLetter = asyncHandler(async (req, res) => {
     var mailOptions = {
       from: process.env.USER,
       to: emailList,
-      subject: subject,
-      text: body,
-      html: '<a href="http://localhost:3000/user/unsubscribe">Unsbscribe</a>',
+      subject: result.subject,
+      text: result.body,
+      html: '<a href="https://librarymngsys.netlify.app/account">Unsbscribe</a>',
     };
     transporter.sendMail(mailOptions, function (error, info) {
       if (error) {
-        res.status(400);
-        res.json({ msg: error });
+        res.status(400).json({ msg: error });
       } else {
-        res.status(200);
-        res.json({ msg: "E-Mail Successfully sent" });
+        res.status(200).json({ msg: "E-Mail Successfully sent" });
       }
     });
   } catch (error) {
-    res.status(500);
-    res.json({ msg: error });
+    res.status(500).json({ msg: error });
   }
 });
 
+// to get all books that has been due by all users
 const dueBooks = asyncHandler(async (req, res) => {
   const admin = await Auth.findById(req.user.id);
   // to check if user exists by that id in the databse
@@ -448,13 +632,61 @@ const dueBooks = asyncHandler(async (req, res) => {
     res.status(401);
     throw new Error("Not Authorized");
   }
-  const books = await Book.find({
-    "users.dueDate": { $lt: new Date().toISOString() },
-  });
-  res.status(200);
-  res.json(books);
+  const page = req.query.page === undefined ? 1 : req.query.page;
+  const limit = 5;
+  const skip = page * limit - limit;
+  const query = [
+    {
+      $match: {
+        "users.dueDate": { $lt: new Date().toISOString() },
+      },
+    },
+    {
+      $facet: {
+        result: [
+          {
+            $skip: skip,
+          },
+          {
+            $limit: limit,
+          },
+          {
+            $project: {
+              createdAt: 0,
+              updatedAt: 0,
+              __v: 0,
+            },
+          },
+        ],
+        count: [
+          {
+            $count: "count",
+          },
+        ],
+      },
+    },
+    {
+      $project: {
+        result: 1,
+        count: {
+          $arrayElemAt: ["$count", 0],
+        },
+      },
+    },
+  ];
+  const result = await Book.aggregate(query);
+  const books = result[0].result;
+  books.forEach(
+    (book) =>
+      (book.users = book.users.filter(
+        (user) => user.dueDate < new Date().toISOString()
+      ))
+  );
+  result[0].result = books;
+  res.status(200).json(result[0]);
 });
 
+// to update the stock of a book already present in library
 const updateStock = asyncHandler(async (req, res) => {
   const admin = await Auth.findById(req.user.id);
   // to check if user exists by that id in the databse
@@ -488,14 +720,14 @@ const updateStock = asyncHandler(async (req, res) => {
       { $inc: { stock: stock } },
       { new: true }
     );
-    res.status(200);
-    res.json(updated);
+    res.status(200).json(updated);
   } catch (error) {
     res.status(500);
     throw new Error("Internal Server Error");
   }
 });
 
+// to get all the activity logs of the library
 const getActivityLogs = asyncHandler(async (req, res) => {
   const admin = await Auth.findById(req.user.id);
   // to check if user exists by that id in the databse
@@ -505,13 +737,49 @@ const getActivityLogs = asyncHandler(async (req, res) => {
     throw new Error("Not Authorized");
   }
   try {
-    const logs = await Activity.find();
-    res.status(200).json(logs);
+    const page = req.query.page === undefined ? 1 : req.query.page;
+    const limit = 10;
+    const skip = page * limit - limit;
+    const query = [
+      {
+        $facet: {
+          result: [
+            {
+              $skip: skip,
+            },
+            {
+              $limit: limit,
+            },
+            {
+              $project: {
+                __v: 0,
+              },
+            },
+          ],
+          count: [
+            {
+              $count: "count",
+            },
+          ],
+        },
+      },
+      {
+        $project: {
+          result: 1,
+          count: {
+            $arrayElemAt: ["$count", 0],
+          },
+        },
+      },
+    ];
+    const result = await Activity.aggregate(query);
+    res.status(200).json(result[0]);
   } catch (error) {
     res.status(500).json(error);
   }
 });
 
+// to block user from the library (ie.issue and request)
 const blockUser = asyncHandler(async (req, res) => {
   const admin = await Auth.findById(req.user.id);
   // to check if user exists by that id in the databse
@@ -533,6 +801,7 @@ const blockUser = asyncHandler(async (req, res) => {
   }
 });
 
+// to unblock user from the library
 const unBlockUser = asyncHandler(async (req, res) => {
   const admin = await Auth.findById(req.user.id);
   // to check if user exists by that id in the databse
@@ -551,6 +820,119 @@ const unBlockUser = asyncHandler(async (req, res) => {
   } catch (error) {
     res.status(500);
     throw new Error("Internal Server Error");
+  }
+});
+
+// to notify users that have due books
+const notifyBookDefaulties = asyncHandler(async (req, res) => {
+  const admin = await Auth.findById(req.user.id);
+  // to check if user exists by that id in the databse
+  // and that user is a admin (got by token)
+  if (!admin && admin.admin !== true) {
+    res.status(401);
+    throw new Error("Not Authorized");
+  }
+  const { users, bookID, title } = req.body;
+  let emails = "";
+  for (let user of users) {
+    try {
+      const defaulty = await Auth.findById(user);
+      emails += defaulty.email + ",";
+    } catch (error) {
+      res.status(400);
+      throw new Error(error);
+    }
+  }
+  const emailList = emails.slice(0, -1).toString();
+  try {
+    var transporter = nodemailer.createTransport({
+      service: process.env.SERVICE,
+      auth: {
+        user: process.env.USER,
+        pass: process.env.PASS,
+      },
+    });
+    var mailOptions = {
+      from: process.env.USER,
+      to: emailList,
+      subject: "Return Book",
+      html: `<!DOCTYPE html><html lang="en"><body>This is to remind you that the book titled ${title} and ID ${bookID} issued by you is due.</body></html>`,
+    };
+    transporter.sendMail(mailOptions, function (error, info) {
+      if (error) {
+        res.status(400).json({ msg: error });
+      } else {
+        res.status(200).json({ msg: "E-Mail Successfully sent" });
+      }
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ msg: error });
+  }
+});
+
+// to get a list of all users that have blocked
+const blockedUsers = asyncHandler(async (req, res) => {
+  const admin = await Auth.findById(req.user.id);
+  // to check if user exists by that id in the databse
+  // and that user is a admin (got by token)
+  if (!admin && admin.admin !== true) {
+    res.status(401);
+    throw new Error("Not Authorized");
+  }
+  try {
+    const page = req.query.page === undefined ? 1 : req.query.page;
+    const limit = 10;
+    const skip = page * limit - limit;
+    const query = [
+      {
+        $match: {
+          blocked: true,
+        },
+      },
+      {
+        $facet: {
+          result: [
+            {
+              $skip: skip,
+            },
+            {
+              $limit: limit,
+            },
+            {
+              $project: {
+                admin: 0,
+                subscriber: 0,
+                readBooks: 0,
+                wishlist: 0,
+                password: 0,
+                createdAt: 0,
+                updatedAt: 0,
+                __v: 0,
+              },
+            },
+          ],
+          count: [
+            {
+              $count: "count",
+            },
+          ],
+        },
+      },
+      {
+        $project: {
+          result: 1,
+          count: {
+            $arrayElemAt: ["$count", 0],
+          },
+        },
+      },
+    ];
+    const result = await Auth.aggregate(query);
+    res.status(200).json(result[0]);
+  } catch (error) {
+    res.status(400);
+    res.json(error);
   }
 });
 
@@ -573,4 +955,6 @@ module.exports = {
   getActivityLogs,
   blockUser,
   unBlockUser,
+  notifyBookDefaulties,
+  blockedUsers,
 };

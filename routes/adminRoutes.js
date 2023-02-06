@@ -18,6 +18,8 @@ const {
   getActivityLogs,
   blockUser,
   unBlockUser,
+  notifyBookDefaulties,
+  blockedUsers,
 } = require("../controller/adminController");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -76,5 +78,11 @@ router.patch("/block/:id", protect, blockUser);
 
 // unblock User
 router.patch("/unblock/:id", protect, unBlockUser);
+
+// to notify book defaulties
+router.post("/notify", protect, notifyBookDefaulties);
+
+// get list of blocked users
+router.get("/blocked", protect, blockedUsers);
 
 module.exports = router;
