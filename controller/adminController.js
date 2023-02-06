@@ -151,7 +151,7 @@ const issueBook = asyncHandler(async (req, res) => {
   }
   try {
     const date = new Date();
-    date.setDate(date.getDate() - 1);
+    date.setDate(date.getDate() + 15);
     // updating the user by user_id and availability status to false
     const updatedbook = await Book.findOneAndUpdate(
       { _id: req.params.id },

@@ -31,7 +31,7 @@ if (cluster.isMaster) {
   const app = express();
   
   const corsOptions = {
-    origin: 'https://librarymngsys.netlify.app',
+    origin: 'http://localhost:3000',
     optionsSuccessStatus: 204
   };
 

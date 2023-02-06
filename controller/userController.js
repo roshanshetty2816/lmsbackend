@@ -28,7 +28,6 @@ const getIssuedBooks = asyncHandler(async (req, res) => {
   // find all books with id same as user_id
   try {
     const books = await Book.find({ "users.id": user._id });
-    console.log(books);
     res.status(200).json(books);
   } catch (error) {
     res.status(500);
