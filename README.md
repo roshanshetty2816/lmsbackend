@@ -15,7 +15,7 @@ The application uses JsonWebTokens (JWT) for authentication to enhance security.
 
 ### Features
 The application caters to two types of users: Librarians and Patrons (General public). Both groups have access to different features tailored to their specific needs. The following is a list of features and their explanations for each type of user:
-
+<pre>
 Librarian:
 a. Issue - The ability to issue books to users.
 b. Return - The ability to un-issue books from users.
