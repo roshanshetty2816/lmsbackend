@@ -46,8 +46,11 @@ h. Related Books - The ability to view all books related to a specific genre.
 i. Review - The ability to rate and comment on books they have issued.
 </pre>
 
+### Other Features
+Everyday at 10:00am, the server automatically sends reminder emails to all library users who have books due.
+
 ### General
- This frontend of this website is hosted on Netlify and backend is hosted on Adaptable. 
+This frontend of this website is hosted on Netlify and backend is hosted on Adaptable. 
 
 ## Getting Started
 
@@ -157,3 +160,4 @@ Inspiration, code snippets, etc.
 - [Stackoverflow](https://stackoverflow.com/)
 - [Adaptable.io](https://adaptable.io)
 - [Netlify](http://app.netlify.com)
+- [Digital Ocean](https://www.digitalocean.com/community/tutorials/nodejs-cron-jobs-by-examples)

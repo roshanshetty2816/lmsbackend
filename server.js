@@ -1,14 +1,21 @@
 require("dotenv").config();
 const express = require("express");
 const { errorHandler } = require("./middleware/errorMiddleware");
-const connectDB = require("./config/db");
+const connectDB = require("./utils/db");
 const cors = require("cors");
 const cluster = require("cluster");
 const totalCPUs = require("os").cpus().length;
 const process = require("process");
+var cron = require("node-cron");
+const { notifyBookDefaulties } = require("./utils/automaticMailSender");
 const port = process.env.PORT || 5000;
 
-if (cluster.isMaster) {
+if (cluster.isPrimary) {
+  // this schedules a job at 10:00 am everyday
+  cron.schedule("00 10 * * *", async function () {
+    await notifyBookDefaulties();
+  });
+
   // console.log(`Number of CPUs is ${totalCPUs}`);
   // console.log(`Master ${process.pid} is running`);
 
@@ -23,19 +30,17 @@ if (cluster.isMaster) {
     // console.log("Let's fork another worker!");
     cluster.fork();
   });
-
 } else {
-
   connectDB();
-  
+
   const app = express();
-  
+
   const corsOptions = {
-    origin: 'https://librarymngsys.netlify.app',
-    optionsSuccessStatus: 204
+    origin: "https://librarymngsys.netlify.app",
+    optionsSuccessStatus: 204,
   };
 
-  app.use(cors(corsOptions))
+  app.use(cors(corsOptions));
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
 

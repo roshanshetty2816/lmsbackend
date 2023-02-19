@@ -834,40 +834,44 @@ const notifyBookDefaulties = asyncHandler(async (req, res) => {
   }
   const { users, bookID, title } = req.body;
   let emails = "";
-  for (let user of users) {
-    try {
-      const defaulty = await Auth.findById(user);
-      emails += defaulty.email + ",";
-    } catch (error) {
-      res.status(400);
-      throw new Error(error);
-    }
-  }
-  const emailList = emails.slice(0, -1).toString();
-  try {
-    var transporter = nodemailer.createTransport({
-      service: process.env.SERVICE,
-      auth: {
-        user: process.env.USER,
-        pass: process.env.PASS,
-      },
-    });
-    var mailOptions = {
-      from: process.env.USER,
-      to: emailList,
-      subject: "Return Book",
-      html: `<!DOCTYPE html><html lang="en"><body>This is to remind you that the book titled ${title} and ID ${bookID} issued by you is due.</body></html>`,
-    };
-    transporter.sendMail(mailOptions, function (error, info) {
-      if (error) {
-        res.status(400).json({ msg: error });
-      } else {
-        res.status(200).json({ msg: "E-Mail Successfully sent" });
+  if (users.length !== 0) {
+    for (let user of users) {
+      try {
+        const defaulty = await Auth.findById(user);
+        emails += defaulty.email + ",";
+      } catch (error) {
+        res.status(400);
+        throw new Error(error);
       }
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ msg: error });
+    }
+    const emailList = emails.slice(0, -1).toString();
+    try {
+      var transporter = nodemailer.createTransport({
+        service: process.env.SERVICE,
+        auth: {
+          user: process.env.USER,
+          pass: process.env.PASS,
+        },
+      });
+      var mailOptions = {
+        from: process.env.USER,
+        to: emailList,
+        subject: "Return Book",
+        html: `<!DOCTYPE html><html lang="en"><body>This is to remind you that the book titled ${title} and ID ${bookID} issued by you is due.</body></html>`,
+      };
+      transporter.sendMail(mailOptions, function (error, info) {
+        if (error) {
+          res.status(400).json({ msg: error });
+        } else {
+          res.status(200).json({ msg: "E-Mail Successfully sent" });
+        }
+      });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ msg: error });
+    }
+  } else {
+    // pass
   }
 });
 
