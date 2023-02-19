@@ -73,6 +73,8 @@ This frontend of this website is hosted on Netlify and backend is hosted on Adap
 - mongoose
 - express-async-handler
 - nodemailer
+- node-cron
+- cors
 
 #### Dev Dependencies
 
