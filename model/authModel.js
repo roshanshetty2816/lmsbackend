@@ -13,7 +13,7 @@ const authSchema = mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: false,
     },
     admin: {
       type: Boolean,
