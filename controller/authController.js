@@ -84,7 +84,10 @@ const register = asyncHandler(async (req, res) => {
         },
       })
       .then(async (response) => {
-        const name = response.data.given_name + response.data.family_name;
+        const name =
+          capitalize(response.data.given_name) +
+          " " +
+          capitalize(response.data.family_name);
         const email = response.data.email;
         // to check if user already exist in the database
         const existingUser = await Auth.findOne({ email });
@@ -160,6 +163,10 @@ const register = asyncHandler(async (req, res) => {
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "10d" });
 };
+
+function capitalize(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
 
 // to edit details of users
 const editDetails = asyncHandler(async (req, res) => {
