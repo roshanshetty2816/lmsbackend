@@ -13,6 +13,11 @@ Website Link: https://librarymngsys.netlify.app/
 ### Security
 The application uses JsonWebTokens (JWT) for authentication to enhance security. Data validation and schema description libraries JOI and YUP are utilized to prevent any unauthorized data processing by the server.
 
+### Special Features
+- Realtime E-Book(PDF) viewing in browser
+- OAuth2.0 Google SignIn
+- Server sends 10:00am reminder emails to users with due books everyday.
+
 ### Features
 The application caters to two types of users: Librarians and Patrons (General public). Both groups have access to different features tailored to their specific needs. The following is a list of features and their explanations for each type of user:
 <pre>
@@ -24,15 +29,16 @@ d. Cancel Request - The ability to cancel any requested book.
 e. Issued Books - Access to a list of all issued books.
 f. Un-Issued Books - Access to a list of all un-issued books.
 g. Add Book - The ability to add books to the inventory.
-h. Delete Book - The ability to delete books from the inventory.
-i. All Users - Access to a list of all users enrolled in the library.
-j. Delete User - The ability to delete a user from the library.
-k. Newsletter - The ability to publish news to all subscribed users.
-l. Inventory - Access to a list of all books in the library with the ability to search and filter based on various parameters.
-m. Activity Logs - The ability to view the library's transaction logs.
-n. Subscibers List - Access to a list of all subscribed users.
-o. Block Users - The ability to block or unblock users.
-p. Update Stock - The ability to update the quantity of books in the inventory.
+h. Add E-Book - The ability to add e-book for a particular book
+i. Delete Book - The ability to delete books from the inventory.
+j. All Users - Access to a list of all users enrolled in the library.
+k. Delete User - The ability to delete a user from the library.
+l. Newsletter - The ability to publish news to all subscribed users.
+m. Inventory - Access to a list of all books in the library with the ability to search and filter based on various parameters.
+n. Activity Logs - The ability to view the library's transaction logs.
+o. Subscibers List - Access to a list of all subscribed users.
+p. Block Users - The ability to block or unblock users.
+q. Update Stock - The ability to update the quantity of books in the inventory.
 
 Patrons (General User):
 a. Request - The ability to request a book.
@@ -44,11 +50,8 @@ f. Rating Books - The ability to rate books they have issued.
 g. Contact - The ability to contact the admin at any time.
 h. Related Books - The ability to view all books related to a specific genre.
 i. Review - The ability to rate and comment on books they have issued.
+j. View E-Book - Users can view PDF of their issued books in realtime
 </pre>
-
-### Other Features
-- OAuth2.0 Google SignIn
-- Everyday at 10:00am, the server automatically sends reminder emails to all library users who have books due.
 
 ### General
 This frontend of this website is hosted on Netlify and backend is hosted on Adaptable. 
@@ -63,9 +66,11 @@ This frontend of this website is hosted on Netlify and backend is hosted on Adap
 - react-router-dom
 - Material UI
 - react-toastify
+- react-pdf
 - formik
 - yup
 - axios
+
 #### Backend
 
 - JsonWebTokens(JWT)
@@ -77,6 +82,8 @@ This frontend of this website is hosted on Netlify and backend is hosted on Adap
 - node-cron
 - cors
 - axios
+- multer
+- multer-gridfs-storage
 
 #### Dev Dependencies
 
@@ -125,7 +132,6 @@ These are following features which can be added further to this web-app to make 
 - Caching Data
 - Database Indexing
 - Cookies
-- View e-Books in realtime
 - Implement Subscription Plan/Model
 - Include fine payment
 - Verify Email
@@ -153,6 +159,8 @@ Mobile No.:  +91 99306 56759
   - Second Release
 - 0.3
   - Third Release
+- 0.4
+ - Fourth Release
 
 ## License
 
@@ -166,3 +174,5 @@ Inspiration, code snippets, etc.
 - [Adaptable.io](https://adaptable.io)
 - [Netlify](http://app.netlify.com)
 - [Digital Ocean](https://www.digitalocean.com/community/tutorials/nodejs-cron-jobs-by-examples)
+- [react-pdf-fix](https://www.npmjs.com/package/react-pdf-fix?activeTab=readme)
+- [Topcoder](https://www.topcoder.com/thrive/articles/storing-large-files-in-mongodb-using-gridfs)

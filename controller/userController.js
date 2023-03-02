@@ -203,7 +203,7 @@ const requestedBooks = asyncHandler(async (req, res) => {
 });
 
 // to get complete details about a book
-const bookDetails = asyncHandler(async (req, res) => {
+const bookDetails = asyncHandler(async (req, res, next) => {
   const user = await Auth.findById(req.user.id);
   // check if user exists in the database
   // and that user is not an admin
@@ -721,6 +721,41 @@ const modifyComment = asyncHandler(async (req, res) => {
   res.status(200).json(updatedComment);
 });
 
+let bucket;
+mongoose.connection.on("connected", () => {
+  var client = mongoose.connections[0].client;
+  var db = mongoose.connections[0].db;
+  bucket = new mongoose.mongo.GridFSBucket(db, {
+    bucketName: "books",
+  });
+});
+
+const getEbook = asyncHandler(async (req, res) => {
+  const user = await Auth.findById(req.user.id);
+  // check if user exists in the database
+  // and that user is not an admin
+  if (!user && user.admin !== false) {
+    res.status(400);
+    throw new Error("User does Not Exists");
+  }
+  try {
+    const file = bucket
+      .find({
+        filename: req.params.id,
+      })
+      .toArray((err, files) => {
+        if (!files || files.length === 0) {
+          return res.status(404).json({
+            err: "no files exist",
+          });
+        }
+        bucket.openDownloadStreamByName(req.params.id).pipe(res);
+      });
+  } catch (error) {
+    res.status(400).json(error);
+  }
+});
+
 module.exports = {
   getIssuedBooks,
   getAllBooks,
@@ -741,4 +776,5 @@ module.exports = {
   deleteComment,
   getComments,
   modifyComment,
+  getEbook,
 };

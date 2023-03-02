@@ -19,6 +19,7 @@ const {
   deleteComment,
   getComments,
   modifyComment,
+  getEbook,
 } = require("../controller/userController");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -80,5 +81,8 @@ router.get("/comments/:id", protect, getComments);
 
 // modify user's comment on a particular book
 router.patch("/update-comment/:id", protect, modifyComment);
+
+// get E-Book
+router.get("/ebook/:id", protect, getEbook);
 
 module.exports = router;

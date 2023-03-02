@@ -51,6 +51,10 @@ const LibrarySchema = mongoose.Schema(
       min: 0,
       required: true,
     },
+    ebook: {
+      type: mongoose.Schema.Types.String,
+      required: false,
+    },
   },
   {
     timestamps: true,

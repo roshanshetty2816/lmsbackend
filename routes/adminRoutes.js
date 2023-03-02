@@ -2,6 +2,7 @@ const express = require("express");
 const {
   getAllBooks,
   addBook,
+  uploadEbook,
   issueBook,
   returnBook,
   deleteBook,
@@ -20,9 +21,10 @@ const {
   unBlockUser,
   notifyBookDefaulties,
   blockedUsers,
+  getEbook,
 } = require("../controller/adminController");
 const { protect } = require("../middleware/authMiddleware");
-
+const { upload } = require("../utils/bookUploader");
 const router = express.Router();
 
 // fetch all books from the inventory
@@ -30,6 +32,9 @@ router.get("/", protect, getAllBooks);
 
 // add a book to the inventory
 router.post("/", protect, addBook);
+
+// upload ebook for a particular book
+router.post("/ebook", protect, upload.single("file"), uploadEbook);
 
 // issue a book from inventory to a user
 router.patch("/issue/:id", protect, issueBook);
@@ -84,5 +89,8 @@ router.post("/notify", protect, notifyBookDefaulties);
 
 // get list of blocked users
 router.get("/blocked", protect, blockedUsers);
+
+// get E-Book
+router.get("/ebook/:id", protect, getEbook);
 
 module.exports = router;

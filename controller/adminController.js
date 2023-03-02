@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const Book = require("../model/libraryModel");
 const Auth = require("../model/authModel");
+const mongoose = require("mongoose");
 const Activity = require("../model/activityModel");
 const Comment = require("../model/CommentModel");
 const nodemailer = require("nodemailer");
@@ -8,6 +9,15 @@ const {
   newsLetterSchema,
   addBookSchema,
 } = require("../validation/adminValidation");
+
+let bucket;
+mongoose.connection.on("connected", () => {
+  var client = mongoose.connections[0].client;
+  var db = mongoose.connections[0].db;
+  bucket = new mongoose.mongo.GridFSBucket(db, {
+    bucketName: "books",
+  });
+});
 
 //gets all books from the database isrrespective of the user
 const getAllBooks = asyncHandler(async (req, res) => {
@@ -94,6 +104,16 @@ const addBook = asyncHandler(async (req, res) => {
     numOfRatings: result.numOfRatings,
   });
   res.status(200).json(book);
+});
+
+// add e-book for a particular book
+const uploadEbook = asyncHandler(async (req, res) => {
+  const book = await Book.findByIdAndUpdate(
+    { _id: req.body.id },
+    { $set: { ebook: req.file.id } },
+    { new: true }
+  );
+  res.json({ message: "E-Book Upload Successfull" });
 });
 
 // issue a book to a particular user by id
@@ -262,9 +282,12 @@ const deleteBook = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("Cannot delete until all books are returned");
   }
+  //extract the ebook id before deleting the book
+  const id = book.ebook;
   // delete book from the inventory
   await book.remove();
   await Comment.deleteMany({ bookID: book._id });
+  bucket.delete(new mongoose.Types.ObjectId(id));
   res.status(200).json({ id: req.params.id });
 });
 
@@ -867,7 +890,6 @@ const notifyBookDefaulties = asyncHandler(async (req, res) => {
         }
       });
     } catch (error) {
-      console.log(error);
       res.status(500).json({ msg: error });
     }
   } else {
@@ -940,9 +962,36 @@ const blockedUsers = asyncHandler(async (req, res) => {
   }
 });
 
+const getEbook = asyncHandler(async (req, res) => {
+  const user = await Auth.findById(req.user.id);
+  // check if user exists in the database
+  // and that user is not an admin
+  if (!user && user.admin !== false) {
+    res.status(400);
+    throw new Error("User does Not Exists");
+  }
+  try {
+    const file = bucket
+      .find({
+        filename: req.params.id,
+      })
+      .toArray((err, files) => {
+        if (!files || files.length === 0) {
+          return res.status(404).json({
+            err: "no files exist",
+          });
+        }
+        bucket.openDownloadStreamByName(req.params.id).pipe(res);
+      });
+  } catch (error) {
+    res.status(400).json(error);
+  }
+});
+
 module.exports = {
   getAllBooks,
   addBook,
+  uploadEbook,
   issueBook,
   returnBook,
   deleteBook,
@@ -961,4 +1010,5 @@ module.exports = {
   unBlockUser,
   notifyBookDefaulties,
   blockedUsers,
+  getEbook,
 };
