@@ -22,6 +22,7 @@ const {
   notifyBookDefaulties,
   blockedUsers,
   getEbook,
+  updateSubscriptionPlan,
 } = require("../controller/adminController");
 const { protect } = require("../middleware/authMiddleware");
 const { upload } = require("../utils/bookUploader");
@@ -92,5 +93,8 @@ router.get("/blocked", protect, blockedUsers);
 
 // get E-Book
 router.get("/ebook/:id", protect, getEbook);
+
+// update subscription plan for a particular plan
+router.put("/update-plan/:id", protect, updateSubscriptionPlan);
 
 module.exports = router;

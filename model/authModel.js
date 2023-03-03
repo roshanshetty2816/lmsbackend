@@ -45,6 +45,10 @@ const authSchema = mongoose.Schema(
       type: [String],
       default: [],
     },
+    subscriptionEndDate: {
+      type: Date,
+      default: () => new Date().toISOString(),
+    },
   },
   {
     timestamps: true,

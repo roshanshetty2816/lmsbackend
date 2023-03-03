@@ -8,12 +8,20 @@ const totalCPUs = require("os").cpus().length;
 const process = require("process");
 var cron = require("node-cron");
 const { notifyBookDefaulties } = require("./utils/automaticMailSender");
+const {
+  automaticSubscriptionReminder,
+} = require("./utils/automatedSubscriptionNotifier");
 const port = process.env.PORT || 5000;
 
 if (cluster.isPrimary) {
   // this schedules a job at 10:00 am everyday
   cron.schedule("00 10 * * *", async function () {
     await notifyBookDefaulties();
+  });
+
+  // this schedulea job at 00.00 am everday to send reminder email whose subscription has expired
+  cron.schedule("00 00 * * *", async function () {
+    await automaticSubscriptionReminder();
   });
 
   // console.log(`Number of CPUs is ${totalCPUs}`);

@@ -17,6 +17,7 @@ The application uses JsonWebTokens (JWT) for authentication to enhance security.
 - Realtime E-Book(PDF) viewing in browser
 - OAuth2.0 Google SignIn
 - Server sends 10:00am reminder emails to users with due books everyday.
+- Server sends an email at 00:00 am to users who have no active plan.
 
 ### Features
 The application caters to two types of users: Librarians and Patrons (General public). Both groups have access to different features tailored to their specific needs. The following is a list of features and their explanations for each type of user:
@@ -39,6 +40,7 @@ n. Activity Logs - The ability to view the library's transaction logs.
 o. Subscibers List - Access to a list of all subscribed users.
 p. Block Users - The ability to block or unblock users.
 q. Update Stock - The ability to update the quantity of books in the inventory.
+r. Update Subscription plan - The ability to update subscription plan for users. 
 
 Patrons (General User):
 a. Request - The ability to request a book.
@@ -160,7 +162,7 @@ Mobile No.:  +91 99306 56759
 - 0.3
   - Third Release
 - 0.4
- - Fourth Release
+  - Fourth Release
 
 ## License
 

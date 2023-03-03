@@ -127,7 +127,7 @@ const register = asyncHandler(async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(result.password, salt);
         const user = await Auth.create({
-          name: result.name,
+          name: capitalize(result.name),
           email: result.email,
           password: hashedPassword,
         });

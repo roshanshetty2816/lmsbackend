@@ -988,6 +988,34 @@ const getEbook = asyncHandler(async (req, res) => {
   }
 });
 
+const updateSubscriptionPlan = asyncHandler(async (req, res) => {
+  const user = await Auth.findById(req.user.id);
+  // check if user exists in the database
+  // and that user is not an admin
+  if (!user && user.admin !== false) {
+    res.status(400);
+    throw new Error("User does Not Exists");
+  }
+  const validMonths = [1, 3, 6, 12];
+  if (!validMonths.includes(Number(req.body.months))) {
+    res.status(400);
+    throw new Error("Invalid Plan selected");
+  }
+  try {
+    var date = new Date();
+    date.setDate(date.getDate() + req.body.months * 30);
+    const updatedPlan = await Auth.findByIdAndUpdate(
+      { _id: req.params.id },
+      { $set: { subscriptionEndDate: date.toISOString() } },
+      { new: true }
+    );
+    res.status(200).json(updatedPlan);
+  } catch (error) {
+    res.status(400);
+    throw new Error(error);
+  }
+});
+
 module.exports = {
   getAllBooks,
   addBook,
@@ -1011,4 +1039,5 @@ module.exports = {
   notifyBookDefaulties,
   blockedUsers,
   getEbook,
+  updateSubscriptionPlan,
 };

@@ -55,7 +55,7 @@ const notifyBookDefaulties = async () => {
               if (error) {
                 console.log(error);
               } else {
-                console.log("Email Sent Successfull");
+                console.log("Email Sent Successfully");
               }
             });
           } catch (error) {
