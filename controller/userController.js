@@ -121,7 +121,7 @@ const requestBook = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("You have been blocked, contact Librarian");
   }
-  if (JSON.stringify(user.subscriptionEndDate) < new Date().toISOString()) {
+  if (new Date(user.subscriptionEndDate) < new Date(new Date().toISOString())) {
     res.status(400);
     throw new Error("You do not have a valid plan to request new book.");
   }
