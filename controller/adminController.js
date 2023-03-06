@@ -21,13 +21,6 @@ mongoose.connection.on("connected", () => {
 
 //gets all books from the database isrrespective of the user
 const getAllBooks = asyncHandler(async (req, res) => {
-  const exist = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!exist && exist.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   // get all books from the database
   const page = req.query.page === undefined ? 1 : req.query.page;
   const limit = 5;
@@ -87,13 +80,6 @@ const addBook = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error(error);
   }
-  const exist = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!exist && exist.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   // create and add a book to the database
   const book = await Book.create({
     title: result.title,
@@ -118,13 +104,6 @@ const uploadEbook = asyncHandler(async (req, res) => {
 
 // issue a book to a particular user by id
 const issueBook = asyncHandler(async (req, res) => {
-  const admin = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!admin && admin.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   if (req.body.userId === undefined) {
     res.status(400);
     throw new Error("Enter a User ID");
@@ -204,13 +183,6 @@ const issueBook = asyncHandler(async (req, res) => {
 
 // user returns book to the library
 const returnBook = asyncHandler(async (req, res) => {
-  const admin = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!admin && admin.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   try {
     // find if the book exist in the database by the id mentioned in params
     const book = await Book.findById(req.params.id);
@@ -264,13 +236,6 @@ const returnBook = asyncHandler(async (req, res) => {
 
 // to delete a book from library
 const deleteBook = asyncHandler(async (req, res) => {
-  const admin = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!admin && admin.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   const book = await Book.findById(req.params.id);
   // find if the book exist in the database by the id mentioned in params
   if (!book) {
@@ -293,13 +258,6 @@ const deleteBook = asyncHandler(async (req, res) => {
 
 // to delete User from the library
 const deleteUser = asyncHandler(async (req, res) => {
-  const admin = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!admin && admin.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   const user = await Auth.findById(req.params.id);
   // check if user exists in database
   if (!user) {
@@ -318,13 +276,6 @@ const deleteUser = asyncHandler(async (req, res) => {
 
 // check for books that has been requested by all users
 const requestedBooks = asyncHandler(async (req, res) => {
-  const admin = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!admin && admin.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   // check for books that has been requested
   const page = req.query.page === undefined ? 1 : req.query.page;
   const limit = 5;
@@ -374,13 +325,6 @@ const requestedBooks = asyncHandler(async (req, res) => {
 
 // cancel a book request made by user
 const cancelRequest = asyncHandler(async (req, res) => {
-  const admin = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!admin && admin.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   const user = await Auth.findById(req.body.id);
   if (!user) {
     res.status(400);
@@ -407,13 +351,6 @@ const cancelRequest = asyncHandler(async (req, res) => {
 
 // get all issued books to users
 const issuedBooks = asyncHandler(async (req, res) => {
-  const admin = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!admin && admin.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   // here this function is not checking if requested book exists in the database
   if (req.query.bookID) {
     try {
@@ -438,13 +375,6 @@ const issuedBooks = asyncHandler(async (req, res) => {
 
 // to unissue a book that has been issued to any user
 const unIssued = asyncHandler(async (req, res) => {
-  const admin = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!admin && admin.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   // here this function is not checking if requested book exists in the database
   if (req.query.bookID) {
     try {
@@ -469,13 +399,6 @@ const unIssued = asyncHandler(async (req, res) => {
 
 // to get list of all users
 const allUsers = asyncHandler(async (req, res) => {
-  const admin = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!admin && admin.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   const page = req.query.page === undefined ? 1 : req.query.page;
   const limit = 5;
   const skip = page * limit - limit;
@@ -528,13 +451,6 @@ const allUsers = asyncHandler(async (req, res) => {
 
 // to get list of all subscribers of the library
 const subscribers = asyncHandler(async (req, res) => {
-  const admin = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!admin && admin.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   try {
     const page = req.query.page === undefined ? 1 : req.query.page;
     const limit = 10;
@@ -593,13 +509,6 @@ const subscribers = asyncHandler(async (req, res) => {
 
 // to publish news to all/subsribers
 const newsLetter = asyncHandler(async (req, res) => {
-  const admin = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!admin && admin.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   let result;
   try {
     result = await newsLetterSchema.validateAsync(req.body);
@@ -648,13 +557,6 @@ const newsLetter = asyncHandler(async (req, res) => {
 
 // to get all books that has been due by all users
 const dueBooks = asyncHandler(async (req, res) => {
-  const admin = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!admin && admin.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   const page = req.query.page === undefined ? 1 : req.query.page;
   const limit = 5;
   const skip = page * limit - limit;
@@ -711,13 +613,6 @@ const dueBooks = asyncHandler(async (req, res) => {
 
 // to update the stock of a book already present in library
 const updateStock = asyncHandler(async (req, res) => {
-  const admin = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!admin && admin.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   const { id } = req.params;
   let { stock, action } = req.body;
   const update = await Book.findById(id);
@@ -752,13 +647,6 @@ const updateStock = asyncHandler(async (req, res) => {
 
 // to get all the activity logs of the library
 const getActivityLogs = asyncHandler(async (req, res) => {
-  const admin = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!admin && admin.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   try {
     const page = req.query.page === undefined ? 1 : req.query.page;
     const limit = 10;
@@ -804,13 +692,6 @@ const getActivityLogs = asyncHandler(async (req, res) => {
 
 // to block user from the library (ie.issue and request)
 const blockUser = asyncHandler(async (req, res) => {
-  const admin = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!admin && admin.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   try {
     const blocked = await Auth.findByIdAndUpdate(
       { _id: req.params.id },
@@ -826,13 +707,6 @@ const blockUser = asyncHandler(async (req, res) => {
 
 // to unblock user from the library
 const unBlockUser = asyncHandler(async (req, res) => {
-  const admin = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!admin && admin.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   try {
     const unblocked = await Auth.findByIdAndUpdate(
       { _id: req.params.id },
@@ -848,13 +722,6 @@ const unBlockUser = asyncHandler(async (req, res) => {
 
 // to notify users that have due books
 const notifyBookDefaulties = asyncHandler(async (req, res) => {
-  const admin = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!admin && admin.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   const { users, bookID, title } = req.body;
   let emails = "";
   if (users.length !== 0) {
@@ -899,13 +766,6 @@ const notifyBookDefaulties = asyncHandler(async (req, res) => {
 
 // to get a list of all users that have blocked
 const blockedUsers = asyncHandler(async (req, res) => {
-  const admin = await Auth.findById(req.user.id);
-  // to check if user exists by that id in the databse
-  // and that user is a admin (got by token)
-  if (!admin && admin.admin !== true) {
-    res.status(401);
-    throw new Error("Not Authorized");
-  }
   try {
     const page = req.query.page === undefined ? 1 : req.query.page;
     const limit = 10;
@@ -963,13 +823,6 @@ const blockedUsers = asyncHandler(async (req, res) => {
 });
 
 const getEbook = asyncHandler(async (req, res) => {
-  const user = await Auth.findById(req.user.id);
-  // check if user exists in the database
-  // and that user is not an admin
-  if (!user && user.admin !== false) {
-    res.status(400);
-    throw new Error("User does Not Exists");
-  }
   try {
     const file = bucket
       .find({
@@ -989,13 +842,6 @@ const getEbook = asyncHandler(async (req, res) => {
 });
 
 const updateSubscriptionPlan = asyncHandler(async (req, res) => {
-  const user = await Auth.findById(req.user.id);
-  // check if user exists in the database
-  // and that user is not an admin
-  if (!user && user.admin !== false) {
-    res.status(400);
-    throw new Error("User does Not Exists");
-  }
   const validMonths = [1, 3, 6, 12];
   if (!validMonths.includes(Number(req.body.months))) {
     res.status(400);

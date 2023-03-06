@@ -16,15 +16,17 @@ const {
   modifyCommentSchema,
 } = require("../validation/userValidation");
 
+let bucket;
+mongoose.connection.on("connected", () => {
+  var client = mongoose.connections[0].client;
+  var db = mongoose.connections[0].db;
+  bucket = new mongoose.mongo.GridFSBucket(db, {
+    bucketName: "books",
+  });
+});
+
 // to get books issued by a particular user
 const getIssuedBooks = asyncHandler(async (req, res) => {
-  const user = await Auth.findById(req.user.id);
-  // check if user exists in the database
-  // and that user is not an admin
-  if (!user && user.admin !== false) {
-    res.status(400);
-    throw new Error("User does Not Exists");
-  }
   // find all books with id same as user_id
   try {
     const books = await Book.find({ "users.id": user._id });
@@ -37,13 +39,6 @@ const getIssuedBooks = asyncHandler(async (req, res) => {
 
 // get all books from the inventory with only required data
 const getAllBooks = asyncHandler(async (req, res) => {
-  const user = await Auth.findById(req.user.id);
-  // check if user exists in the database
-  // and that user is not an admin
-  if (!user && user.admin !== false) {
-    res.status(400);
-    throw new Error("User does Not Exists");
-  }
   const page = req.query.page === undefined ? 1 : req.query.page;
   const limit = 5;
   const skip = page * limit - limit;
@@ -110,13 +105,6 @@ const getAllBooks = asyncHandler(async (req, res) => {
 
 // to request a book by user
 const requestBook = asyncHandler(async (req, res) => {
-  const user = await Auth.findById(req.user.id);
-  // check if user exists in the database
-  // and that user is not an admin
-  if (!user && user.admin !== false) {
-    res.status(400);
-    throw new Error("User does Not Exists");
-  }
   if (user.blocked === true) {
     res.status(400);
     throw new Error("You have been blocked, contact Librarian");
@@ -157,13 +145,6 @@ const requestBook = asyncHandler(async (req, res) => {
 
 // to allow users to cancel book they requested
 const cancelRequest = asyncHandler(async (req, res) => {
-  const user = await Auth.findById(req.user.id);
-  // check if user exists in the database
-  // and that user is not an admin
-  if (!user && user.admin !== false) {
-    res.status(400);
-    throw new Error("User does Not Exists");
-  }
   if (!req.params.id) {
     res.status(400);
     throw new Error("Select a Book to request");
@@ -188,13 +169,6 @@ const cancelRequest = asyncHandler(async (req, res) => {
 });
 
 const requestedBooks = asyncHandler(async (req, res) => {
-  const user = await Auth.findById(req.user.id);
-  // check if user exists in the database
-  // and that user is not an admin
-  if (!user && user.admin !== false) {
-    res.status(400);
-    throw new Error("User does Not Exists");
-  }
   // find all books with id same as user_id
   try {
     const books = await Book.find({ requestedUsers: user._id });
@@ -208,13 +182,6 @@ const requestedBooks = asyncHandler(async (req, res) => {
 
 // to get complete details about a book
 const bookDetails = asyncHandler(async (req, res, next) => {
-  const user = await Auth.findById(req.user.id);
-  // check if user exists in the database
-  // and that user is not an admin
-  if (!user && user.admin !== false) {
-    res.status(400);
-    throw new Error("User does Not Exists");
-  }
   //check if book id is missing
   if (!req.params.id) {
     res.status(400);
@@ -234,13 +201,6 @@ const bookDetails = asyncHandler(async (req, res, next) => {
 
 // to get related books which has same genre as the book being viewed in book details
 const relatedBooks = asyncHandler(async (req, res) => {
-  const user = await Auth.findById(req.user.id);
-  // check if user exists in the database
-  // and that user is not an admin
-  if (!user && user.admin !== false) {
-    res.status(400);
-    throw new Error("User does Not Exists");
-  }
   const { genre } = req.query;
   const reQgenre = genre.split(",");
   if (!genre) {
@@ -300,13 +260,6 @@ const relatedBooks = asyncHandler(async (req, res) => {
 
 // to unsubscibe from the newsletter
 const Unsbscribe = asyncHandler(async (req, res) => {
-  const user = await Auth.findById(req.user.id);
-  // check if user exists in the database
-  // and that user is not an admin
-  if (!user && user.admin !== false) {
-    res.status(400);
-    throw new Error("User does Not Exists");
-  }
   const { id } = req.params;
   if (!id) {
     res.status(400);
@@ -420,13 +373,6 @@ const forgotPass = asyncHandler(async (req, res) => {
 
 // to add a book to wishlist
 const addToWish = asyncHandler(async (req, res) => {
-  const user = await Auth.findById(req.user.id);
-  // check if user exists in the database
-  // and that user is not an admin
-  if (!user && user.admin !== false) {
-    res.status(400);
-    throw new Error("User does Not Exists");
-  }
   const { id } = req.params;
   if (!id) {
     res.status(400);
@@ -492,13 +438,6 @@ const wishList = asyncHandler(async (req, res) => {
 
 // to remove a books from wishlist
 const removefromWish = asyncHandler(async (req, res) => {
-  const user = await Auth.findById(req.user.id).select("wishlist -_id admin");
-  // check if user exists in the database
-  // and that user is not an admin
-  if (!user && user.admin !== false) {
-    res.status(400);
-    throw new Error("User does Not Exists");
-  }
   const { id } = req.params;
   if (!id) {
     res.status(400);
@@ -528,13 +467,6 @@ const removefromWish = asyncHandler(async (req, res) => {
 
 // to cantact the admin/library
 const contact = asyncHandler(async (req, res) => {
-  const user = await Auth.findById(req.user.id);
-  // check if user exists in the database
-  // and that user is not an admin
-  if (!user && user.admin !== false) {
-    res.status(400);
-    throw new Error("User does Not Exists");
-  }
   let result;
   try {
     result = await contactSchema.validateAsync(req.body);
@@ -573,22 +505,16 @@ const contact = asyncHandler(async (req, res) => {
 
 // to subscribe to newsletter
 const subscribe = asyncHandler(async (req, res) => {
-  const user = await Auth.findById(req.user.id);
-  // check if user exists in the database
-  // and that user is not an admin
-  if (!user && user.admin !== false) {
-    res.status(400);
-    throw new Error("User does Not Exists");
-  }
   try {
     const subscribed = await Auth.findByIdAndUpdate(
-      { _id: user._id },
+      { _id: req.user.id },
       { subscriber: true },
-      { new: true }
+      { new: true, select: "-_id -createdAt -updatedAt -password" }
     );
     res.status(200).json(subscribed);
   } catch (error) {
     res.status(500);
+    console.log(error);
     throw new Error(error);
   }
 });
@@ -601,13 +527,6 @@ const addReview = asyncHandler(async (req, res) => {
   } catch (error) {
     res.status(400);
     throw new Error(error);
-  }
-  const user = await Auth.findById(req.user.id);
-  // check if user exists in the database
-  // and that user is not an admin
-  if (!user && user.admin !== false) {
-    res.status(400);
-    throw new Error("User does Not Exists");
   }
   if (user.name !== result.userName) {
     res.status(400);
@@ -649,13 +568,6 @@ const deleteComment = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error(error);
   }
-  const user = await Auth.findById(req.user.id);
-  // check if user exists in the database
-  // and that user is not an admin
-  if (!user && user.admin !== false) {
-    res.status(400);
-    throw new Error("User does Not Exists");
-  }
   const comment = await Comment.findById(req.params.id);
   if (!comment) {
     res.status(400);
@@ -681,13 +593,6 @@ const deleteComment = asyncHandler(async (req, res) => {
 // to all comments related to that book
 const getComments = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const user = await Auth.findById(req.user.id);
-  // check if user exists in the database
-  // and that user is not an admin
-  if (!user && user.admin !== false) {
-    res.status(400);
-    throw new Error("User does Not Exists");
-  }
   try {
     const comments = await Comment.find({ bookID: id });
     res.status(200).json(comments);
@@ -706,13 +611,6 @@ const modifyComment = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error(error);
   }
-  const user = await Auth.findById(req.user.id);
-  // check if user exists in the database
-  // and that user is not an admin
-  if (!user && user.admin !== false) {
-    res.status(400);
-    throw new Error("User does Not Exists");
-  }
   const updatedComment = await Comment.findOneAndUpdate(
     {
       bookID: mongoose.Types.ObjectId(result.bookID),
@@ -725,23 +623,7 @@ const modifyComment = asyncHandler(async (req, res) => {
   res.status(200).json(updatedComment);
 });
 
-let bucket;
-mongoose.connection.on("connected", () => {
-  var client = mongoose.connections[0].client;
-  var db = mongoose.connections[0].db;
-  bucket = new mongoose.mongo.GridFSBucket(db, {
-    bucketName: "books",
-  });
-});
-
 const getEbook = asyncHandler(async (req, res) => {
-  const user = await Auth.findById(req.user.id);
-  // check if user exists in the database
-  // and that user is not an admin
-  if (!user && user.admin !== false) {
-    res.status(400);
-    throw new Error("User does Not Exists");
-  }
   try {
     const file = bucket
       .find({

@@ -25,76 +25,77 @@ const {
   updateSubscriptionPlan,
 } = require("../controller/adminController");
 const { protect } = require("../middleware/authMiddleware");
+const { adminAuth } = require("../middleware/adminAuthMiddleware");
 const { upload } = require("../utils/bookUploader");
 const router = express.Router();
 
 // fetch all books from the inventory
-router.get("/", protect, getAllBooks);
+router.get("/", protect, adminAuth, getAllBooks);
 
 // add a book to the inventory
-router.post("/", protect, addBook);
+router.post("/", protect, adminAuth, addBook);
 
 // upload ebook for a particular book
-router.post("/ebook", protect, upload.single("file"), uploadEbook);
+router.post("/ebook", protect, adminAuth, upload.single("file"), uploadEbook);
 
 // issue a book from inventory to a user
-router.patch("/issue/:id", protect, issueBook);
+router.patch("/issue/:id", protect, adminAuth, issueBook);
 
 // withdraw issue of a book from a user
-router.patch("/return/:id", protect, returnBook);
+router.patch("/return/:id", protect, adminAuth, returnBook);
 
 // delete a book from the inventory
-router.delete("/:id", protect, deleteBook);
+router.delete("/:id", protect, adminAuth, deleteBook);
 
 // delete account of a user
-router.delete("/user/:id", protect, deleteUser);
+router.delete("/user/:id", protect, adminAuth, deleteUser);
 
 // to get all requested books
-router.get("/requested", protect, requestedBooks);
+router.get("/requested", protect, adminAuth, requestedBooks);
 
 // cancel a particular request
-router.patch("/cancel/:id", protect, cancelRequest);
+router.patch("/cancel/:id", protect, adminAuth, cancelRequest);
 
 // to get all issued books
-router.get("/issued", protect, issuedBooks);
+router.get("/issued", protect, adminAuth, issuedBooks);
 
 // to get all unissued books
-router.get("/unissued", protect, unIssued);
+router.get("/unissued", protect, adminAuth, unIssued);
 
 // to get all users
-router.get("/users", protect, allUsers);
+router.get("/users", protect, adminAuth, allUsers);
 
 // to get subscribers
-router.get("/subscribers", protect, subscribers);
+router.get("/subscribers", protect, adminAuth, subscribers);
 
 // newsletter
-router.post("/news", protect, newsLetter);
+router.post("/news", protect, adminAuth, newsLetter);
 
 // due books
-router.get("/duebooks", protect, dueBooks);
+router.get("/duebooks", protect, adminAuth, dueBooks);
 
 // update Stock
-router.patch("/update/:id", protect, updateStock);
+router.patch("/update/:id", protect, adminAuth, updateStock);
 
 // get Activity Logs
-router.get("/logs", protect, getActivityLogs);
+router.get("/logs", protect, adminAuth, getActivityLogs);
 
 // block User
-router.patch("/block/:id", protect, blockUser);
+router.patch("/block/:id", protect, adminAuth, blockUser);
 
 // unblock User
-router.patch("/unblock/:id", protect, unBlockUser);
+router.patch("/unblock/:id", protect, adminAuth, unBlockUser);
 
 // to notify book defaulties
-router.post("/notify", protect, notifyBookDefaulties);
+router.post("/notify", protect, adminAuth, notifyBookDefaulties);
 
 // get list of blocked users
-router.get("/blocked", protect, blockedUsers);
+router.get("/blocked", protect, adminAuth, blockedUsers);
 
 // get E-Book
-router.get("/ebook/:id", protect, getEbook);
+router.get("/ebook/:id", protect, adminAuth, getEbook);
 
 // update subscription plan for a particular plan
-router.put("/update-plan/:id", protect, updateSubscriptionPlan);
+router.put("/update-plan/:id", protect, adminAuth, updateSubscriptionPlan);
 
 module.exports = router;
